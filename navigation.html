@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prosellers App - Navigation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .back-button {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 12px 24px;
+            background: rgba(102, 126, 234, 0.95);
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 999999;
+            font-family: inherit;
+        }
+        
+        .back-button:hover {
+            background: rgba(102, 126, 234, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .back-button:active {
+            transform: translateY(0);
+        }
+        
+        iframe {
+            width: 100%;
+            height: 100vh;
+            border: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        iframe.loaded {
+            opacity: 1;
+        }
+        
+        .loading-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 999998;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(102, 126, 234, 0.2);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        .loading-text {
+            color: #667eea;
+            font-size: 1rem;
+            font-weight: 500;
+        }
+        
+        .loading-container.hidden {
+            display: none;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-container" id="loadingContainer">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading...</div>
+    </div>
+    <button class="back-button" id="backButton">← Back to Apps</button>
+    <iframe id="contentFrame" src=""></iframe>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        const contentFrame = document.getElementById('contentFrame');
+        const loadingContainer = document.getElementById('loadingContainer');
+        
+        // Get URL from main process
+        const targetUrl = ipcRenderer.sendSync('get-current-url');
+        
+        // Show loading when iframe starts loading
+        contentFrame.addEventListener('loadstart', () => {
+            loadingContainer.classList.remove('hidden');
+            contentFrame.classList.remove('loaded');
+        });
+        
+        // Hide loading when iframe finishes loading
+        contentFrame.addEventListener('load', () => {
+            setTimeout(() => {
+                loadingContainer.classList.add('hidden');
+                contentFrame.classList.add('loaded');
+            }, 300);
+        });
+        
+        // Handle errors
+        contentFrame.addEventListener('error', () => {
+            loadingContainer.classList.add('hidden');
+        });
+        
+        if (targetUrl) {
+            contentFrame.src = targetUrl;
+        }
+        
+        // Handle back button click
+        document.getElementById('backButton').addEventListener('click', () => {
+            ipcRenderer.send('navigate-home');
+        });
+    </script>
+</body>
+</html>
+
