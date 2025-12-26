@@ -11,7 +11,12 @@
         <header>
             <h1>Prosellers Services</h1>
             <p class="subtitle">Quick access to all your applications</p>
-            <p class="version-info" id="versionInfo">Version 1.0.0</p>
+            <div class="version-container">
+                <p class="version-info" id="versionInfo">Version 1.0.0</p>
+                <button class="update-check-btn" id="updateCheckBtn" title="Check for updates">🔄</button>
+                <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
+            </div>
+            <div class="update-notification" id="updateNotification"></div>
         </header>
         
         <div class="apps-grid" id="appsGrid">

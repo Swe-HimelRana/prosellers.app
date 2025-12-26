@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings - Prosellers App</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: #202020;
+            padding: 16px;
+            color: #cccccc;
+        }
+        
+        .settings-container {
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 24px;
+            background: #2d2d30;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            border: 1px solid #3f3f46;
+        }
+        
+        .settings-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #3f3f46;
+        }
+        
+        .settings-header h1 {
+            color: #ffffff;
+            margin-bottom: 4px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .settings-header p {
+            color: #a0a0a0;
+            font-size: 14px;
+        }
+        
+        .setting-item {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #252526;
+            border-radius: 4px;
+            border: 1px solid #3f3f46;
+        }
+        
+        .setting-item h3 {
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+        
+        .setting-item p {
+            color: #a0a0a0;
+            margin-bottom: 12px;
+            font-size: 13px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 30px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #0078d4;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(30px);
+        }
+        
+        .pin-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .pin-input {
+            width: 44px;
+            height: 44px;
+            text-align: center;
+            font-size: 18px;
+            border: 1px solid #3f3f46;
+            border-radius: 4px;
+            font-weight: 600;
+            font-family: 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+        }
+        
+        .pin-input:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.3);
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .btn-primary {
+            background: #0078d4;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #106ebe;
+        }
+        
+        .btn-primary:active {
+            background: #005a9e;
+        }
+        
+        .btn-secondary {
+            background: #2d2d30;
+            color: #cccccc;
+            border: 1px solid #3f3f46;
+        }
+        
+        .btn-secondary:hover {
+            background: #3f3f46;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            padding: 8px 16px;
+            background: #2d2d30;
+            border: 1px solid #3f3f46;
+            border-radius: 4px;
+            color: #cccccc;
+            cursor: pointer;
+            font-weight: 400;
+            font-size: 14px;
+            font-family: 'Segoe UI', sans-serif;
+        }
+        
+        .back-btn:hover {
+            background: #3f3f46;
+            border-color: #0078d4;
+        }
+        
+        .status-message {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        
+        .status-message.success {
+            background: #1e3a1e;
+            color: #81c784;
+            border-color: #4caf50;
+            display: block;
+        }
+        
+        .status-message.error {
+            background: #3a1e1e;
+            color: #ef5350;
+            border-color: #d32f2f;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" id="backBtn">← Back</button>
+    <div class="settings-container">
+        <div class="settings-header">
+            <h1>⚙️ Settings</h1>
+            <p>Manage your app preferences</p>
+        </div>
+        
+        <div class="setting-item">
+            <h3>PIN Protection</h3>
+            <p>Require a PIN to access the app list</p>
+            <label class="toggle-switch">
+                <input type="checkbox" id="pinEnabled">
+                <span class="toggle-slider"></span>
+            </label>
+            
+            <div id="pinSettings" style="display: none;">
+                <div class="pin-input-group" id="pinInputGroup">
+                    <input type="password" class="pin-input" maxlength="1" id="pin1" autocomplete="off">
+                    <input type="password" class="pin-input" maxlength="1" id="pin2" autocomplete="off">
+                    <input type="password" class="pin-input" maxlength="1" id="pin3" autocomplete="off">
+                    <input type="password" class="pin-input" maxlength="1" id="pin4" autocomplete="off">
+                </div>
+                <p style="font-size: 0.85rem; color: #718096; margin-top: 10px;">Enter a 4-digit PIN</p>
+                <button class="btn btn-primary" id="savePinBtn" style="margin-top: 15px;">Save PIN</button>
+            </div>
+            
+            <div class="status-message" id="statusMessage"></div>
+        </div>
+        
+        <div class="setting-item">
+            <h3>App Control</h3>
+            <p>Restart the application to apply changes</p>
+            <button class="btn btn-primary" id="restartBtn" style="margin-top: 15px;">🔄 Restart App</button>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button class="btn btn-secondary" id="backToAppListBtn" style="padding: 12px 30px; font-size: 1rem;">← Back to App List</button>
+        </div>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        const pinEnabled = document.getElementById('pinEnabled');
+        const pinSettings = document.getElementById('pinSettings');
+        const pinInputs = ['pin1', 'pin2', 'pin3', 'pin4'].map(id => document.getElementById(id));
+        const savePinBtn = document.getElementById('savePinBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const backBtn = document.getElementById('backBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const backToAppListBtn = document.getElementById('backToAppListBtn');
+        
+        // Load current settings
+        ipcRenderer.send('get-pin-settings');
+        ipcRenderer.on('pin-settings', (event, settings) => {
+            pinEnabled.checked = settings.enabled || false;
+            pinSettings.style.display = settings.enabled ? 'block' : 'none';
+        });
+        
+        // Toggle PIN protection
+        pinEnabled.addEventListener('change', () => {
+            const enabled = pinEnabled.checked;
+            pinSettings.style.display = enabled ? 'block' : 'none';
+            ipcRenderer.send('set-pin-enabled', enabled);
+            showStatus('PIN protection ' + (enabled ? 'enabled' : 'disabled'), 'success');
+            
+            if (!enabled) {
+                // Clear PIN inputs
+                pinInputs.forEach(input => input.value = '');
+            }
+        });
+        
+        // PIN input handling
+        pinInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                if (e.target.value.length === 1 && index < pinInputs.length - 1) {
+                    pinInputs[index + 1].focus();
+                }
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    pinInputs[index - 1].focus();
+                }
+            });
+        });
+        
+        // Save PIN
+        savePinBtn.addEventListener('click', () => {
+            const pin = pinInputs.map(input => input.value).join('');
+            if (pin.length === 4 && /^\d{4}$/.test(pin)) {
+                ipcRenderer.send('set-pin', pin);
+                showStatus('PIN saved successfully', 'success');
+                pinInputs.forEach(input => input.value = '');
+                pinInputs[0].focus();
+            } else {
+                showStatus('Please enter a valid 4-digit PIN', 'error');
+            }
+        });
+        
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message ' + type;
+            setTimeout(() => {
+                statusMessage.className = 'status-message';
+            }, 3000);
+        }
+        
+        // Back button
+        backBtn.addEventListener('click', () => {
+            ipcRenderer.send('navigate-home');
+        });
+        
+        // Restart button
+        restartBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to restart the app? All unsaved changes will be lost.')) {
+                ipcRenderer.send('restart-app');
+            }
+        });
+        
+        // Back to App List button
+        backToAppListBtn.addEventListener('click', () => {
+            ipcRenderer.send('navigate-home');
+        });
+    </script>
+</body>
+</html>
+

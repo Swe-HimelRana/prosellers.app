@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter PIN - Prosellers App</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        body {
+            background: #202020;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', sans-serif;
+            color: #cccccc;
+        }
+        
+        .pin-container {
+            background: #2d2d30;
+            padding: 32px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+            border: 1px solid #3f3f46;
+        }
+        
+        .pin-container h1 {
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        
+        .pin-container p {
+            color: #a0a0a0;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        
+        .pin-input-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        
+        .pin-input {
+            width: 52px;
+            height: 52px;
+            text-align: center;
+            font-size: 20px;
+            border: 1px solid #3f3f46;
+            border-radius: 4px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-family: 'Segoe UI', sans-serif;
+            background: #1e1e1e;
+            color: #cccccc;
+        }
+        
+        .pin-input:focus {
+            outline: none;
+            border-color: #0078d4;
+            box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.3);
+        }
+        
+        .error-message {
+            color: #ef5350;
+            margin-top: 12px;
+            font-size: 13px;
+            min-height: 20px;
+        }
+        
+        .pin-hint {
+            color: #a0a0a0;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="pin-container">
+        <h1>🔒 Enter PIN</h1>
+        <p>Please enter your PIN to access the app</p>
+        <div class="pin-input-group" id="pinInputGroup">
+            <input type="password" class="pin-input" maxlength="1" id="pin1" autocomplete="off" autofocus>
+            <input type="password" class="pin-input" maxlength="1" id="pin2" autocomplete="off">
+            <input type="password" class="pin-input" maxlength="1" id="pin3" autocomplete="off">
+            <input type="password" class="pin-input" maxlength="1" id="pin4" autocomplete="off">
+        </div>
+        <div class="error-message" id="errorMessage"></div>
+        <p class="pin-hint">Enter 4-digit PIN</p>
+    </div>
+    
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        const pinInputs = ['pin1', 'pin2', 'pin3', 'pin4'].map(id => document.getElementById(id));
+        const errorMessage = document.getElementById('errorMessage');
+        
+        let currentPin = '';
+        
+        // PIN input handling
+        pinInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                errorMessage.textContent = '';
+                if (e.target.value.length === 1) {
+                    if (index < pinInputs.length - 1) {
+                        pinInputs[index + 1].focus();
+                    } else {
+                        // All 4 digits entered, verify PIN
+                        const pin = pinInputs.map(inp => inp.value).join('');
+                        verifyPin(pin);
+                    }
+                }
+            });
+            
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    pinInputs[index - 1].focus();
+                }
+            });
+        });
+        
+        function verifyPin(pin) {
+            ipcRenderer.send('verify-pin', pin);
+        }
+        
+        ipcRenderer.on('pin-verified', (event, success) => {
+            if (success) {
+                // PIN correct, navigate to home
+                ipcRenderer.send('navigate-home');
+            } else {
+                // PIN incorrect
+                errorMessage.textContent = 'Incorrect PIN. Please try again.';
+                pinInputs.forEach(input => {
+                    input.value = '';
+                    input.style.borderColor = '#e53e3e';
+                    setTimeout(() => {
+                        input.style.borderColor = '#e2e8f0';
+                    }, 500);
+                });
+                pinInputs[0].focus();
+            }
+        });
+    </script>
+</body>
+</html>
+

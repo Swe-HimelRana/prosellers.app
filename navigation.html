@@ -16,34 +16,50 @@
             padding: 0;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            position: relative;
         }
         
-        .back-button {
+        .button-container {
             position: fixed;
             bottom: 20px;
             left: 20px;
-            padding: 12px 24px;
-            background: rgba(102, 126, 234, 0.95);
-            border: none;
-            border-radius: 25px;
-            font-size: 1rem;
+            z-index: 2147483647;
+            pointer-events: none;
+            isolation: isolate;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            will-change: transform;
+        }
+        
+        .back-button {
+            position: relative;
+            padding: 8px 16px;
+            background: #0078d4 !important;
+            border: none !important;
+            border-radius: 4px;
+            font-size: 14px;
             font-weight: 600;
-            color: white;
+            color: white !important;
             cursor: pointer;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
-            z-index: 999999;
-            font-family: inherit;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+            transition: all 0.2s ease;
+            font-family: 'Segoe UI', sans-serif;
+            pointer-events: auto !important;
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+            will-change: transform;
         }
         
         .back-button:hover {
-            background: rgba(102, 126, 234, 1);
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: #106ebe !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.16) !important;
         }
         
         .back-button:active {
-            transform: translateY(0);
+            background: #005a9e !important;
         }
         
         iframe {
@@ -52,6 +68,25 @@
             border: none;
             opacity: 0;
             transition: opacity 0.3s ease;
+            position: relative;
+            z-index: 1;
+            pointer-events: auto;
+            transform: translateZ(0);
+        }
+        
+        /* Create a separate layer for the button */
+        body {
+            position: relative;
+        }
+        
+        /* Ensure button container is in a separate compositing layer */
+        .button-container {
+            position: fixed !important;
+            bottom: 20px !important;
+            left: 20px !important;
+            z-index: 2147483647 !important;
+            transform: translate3d(0, 0, 0) !important;
+            -webkit-transform: translate3d(0, 0, 0) !important;
         }
         
         iframe.loaded {
@@ -89,6 +124,53 @@
             display: none;
         }
         
+        .error-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 400px;
+            z-index: 999999;
+        }
+        
+        .error-message h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+        
+        .error-message p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .error-message button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .error-message button:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+        
+        .error-message.hidden {
+            display: none;
+        }
+        
         @keyframes spin {
             to {
                 transform: rotate(360deg);
@@ -101,22 +183,37 @@
         <div class="loading-spinner"></div>
         <div class="loading-text">Loading...</div>
     </div>
-    <button class="back-button" id="backButton">← Back to Apps</button>
+    <div class="error-message hidden" id="errorMessage">
+        <h3>⚠️ Cannot Load in App</h3>
+        <p>This website cannot be displayed in the app window due to security restrictions. Would you like to open it in your default browser instead?</p>
+        <button id="openExternalBtn">Open in Browser</button>
+    </div>
     <iframe id="contentFrame" src=""></iframe>
+    <!-- Button container placed after iframe to ensure it's on top -->
+    <div class="button-container" id="buttonContainer">
+        <button class="back-button" id="backButton">← Back to Apps</button>
+    </div>
     
     <script>
-        const { ipcRenderer } = require('electron');
+        const { ipcRenderer, shell } = require('electron');
         
         const contentFrame = document.getElementById('contentFrame');
         const loadingContainer = document.getElementById('loadingContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        let targetUrl = null;
         
         // Get URL from main process
-        const targetUrl = ipcRenderer.sendSync('get-current-url');
+        targetUrl = ipcRenderer.sendSync('get-current-url');
+        
+        // Track if we've shown the error
+        let errorShown = false;
         
         // Show loading when iframe starts loading
         contentFrame.addEventListener('loadstart', () => {
             loadingContainer.classList.remove('hidden');
             contentFrame.classList.remove('loaded');
+            errorMessage.classList.add('hidden');
+            errorShown = false;
         });
         
         // Hide loading when iframe finishes loading
@@ -127,18 +224,161 @@
             }, 300);
         });
         
-        // Handle errors
-        contentFrame.addEventListener('error', () => {
+        // Handle iframe errors - check for blocked content
+        contentFrame.addEventListener('error', (e) => {
             loadingContainer.classList.add('hidden');
+            if (!errorShown) {
+                // Wait a moment to see if it's a temporary error
+                setTimeout(() => {
+                    if (!errorShown && contentFrame.src && contentFrame.src !== targetUrl) {
+                        showError();
+                    }
+                }, 2000);
+            }
         });
         
+        // Monitor for blocked responses
         if (targetUrl) {
+            let frameLoaded = false;
+            let loadCheckTimeout;
+            
+            // Override console.error to catch X-Frame-Options errors
+            const originalConsoleError = console.error;
+            console.error = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('X-Frame-Options') || 
+                    message.includes('Refused to display') || 
+                    message.includes('frame') && message.includes('deny')) {
+                    if (!errorShown) {
+                        clearTimeout(loadCheckTimeout);
+                        showError();
+                    }
+                }
+                originalConsoleError.apply(console, args);
+            };
+            
             contentFrame.src = targetUrl;
+            
+            // Check if iframe loaded successfully
+            contentFrame.addEventListener('load', () => {
+                frameLoaded = true;
+                clearTimeout(loadCheckTimeout);
+            }, { once: true });
+            
+            // Fallback: Check for blocked iframe after 2 seconds
+            loadCheckTimeout = setTimeout(() => {
+                if (!frameLoaded && !errorShown) {
+                    // Check if frame src was reset (indicates blocking)
+                    try {
+                        if (contentFrame.src === 'about:blank' || 
+                            contentFrame.src === '' || 
+                            contentFrame.contentWindow === null) {
+                            showError();
+                        } else {
+                            // Frame has a URL, might still be loading, wait a bit more
+                            setTimeout(() => {
+                                if (!errorShown) {
+                                    // Still not loaded, likely blocked
+                                    showError();
+                                }
+                            }, 2000);
+                        }
+                    } catch (e) {
+                        // Can't access frame, might be blocked
+                        showError();
+                    }
+                }
+            }, 2000);
         }
         
+        function showError() {
+            errorShown = true;
+            loadingContainer.classList.add('hidden');
+            errorMessage.classList.remove('hidden');
+        }
+        
+        // Handle open in browser button
+        document.getElementById('openExternalBtn').addEventListener('click', () => {
+            if (targetUrl) {
+                shell.openExternal(targetUrl);
+                ipcRenderer.send('navigate-home');
+            }
+        });
+        
         // Handle back button click
-        document.getElementById('backButton').addEventListener('click', () => {
+        const backButton = document.getElementById('backButton');
+        backButton.addEventListener('click', () => {
             ipcRenderer.send('navigate-home');
+        });
+        
+        // Ensure back button stays visible and on top
+        function ensureButtonVisible() {
+            const buttonContainer = document.getElementById('buttonContainer');
+            if (buttonContainer && backButton) {
+                // Force button to stay on top with maximum z-index
+                buttonContainer.style.cssText = `
+                    position: fixed !important;
+                    bottom: 20px !important;
+                    left: 20px !important;
+                    z-index: 2147483647 !important;
+                    pointer-events: none !important;
+                    transform: translate3d(0, 0, 0) !important;
+                    -webkit-transform: translate3d(0, 0, 0) !important;
+                `;
+                
+                backButton.style.cssText = `
+                    position: relative !important;
+                    display: block !important;
+                    visibility: visible !important;
+                    opacity: 1 !important;
+                    pointer-events: auto !important;
+                    z-index: 2147483647 !important;
+                `;
+                
+                // Move button container to end of body to ensure it's last in DOM
+                if (buttonContainer.parentNode !== document.body) {
+                    document.body.appendChild(buttonContainer);
+                } else {
+                    // Move to end if already in body
+                    document.body.appendChild(buttonContainer);
+                }
+                
+                // Force a reflow
+                void buttonContainer.offsetWidth;
+            }
+        }
+        
+        // Ensure button is visible after iframe loads
+        contentFrame.addEventListener('load', () => {
+            setTimeout(() => {
+                ensureButtonVisible();
+                // Move button to end of body after iframe loads
+                const buttonContainer = document.getElementById('buttonContainer');
+                if (buttonContainer && buttonContainer.parentNode) {
+                    document.body.appendChild(buttonContainer);
+                }
+            }, 100);
+        });
+        
+        // Periodically check and ensure button is visible (for DB Access and similar)
+        setInterval(() => {
+            ensureButtonVisible();
+            // Keep button at end of DOM
+            const buttonContainer = document.getElementById('buttonContainer');
+            if (buttonContainer && buttonContainer.parentNode === document.body) {
+                document.body.appendChild(buttonContainer);
+            }
+        }, 500);
+        
+        // Initial check
+        setTimeout(ensureButtonVisible, 100);
+        ensureButtonVisible();
+        
+        // Listen for navigation errors from main process
+        ipcRenderer.on('iframe-error', () => {
+            if (targetUrl && !errorShown) {
+                showError();
+            }
         });
     </script>
 </body>
